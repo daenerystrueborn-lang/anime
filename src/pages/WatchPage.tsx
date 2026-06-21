@@ -1,260 +1,165 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ChevronLeft, ChevronRight, Play, Clock, BookOpen,
-  ExternalLink, List, Star, Calendar, Film
-} from "lucide-react";
+import { ChevronLeft, Play, BookOpen, List, Star, Calendar, Film, ChevronDown } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { LoadingPage } from "../components/LoadingSpinner";
 import LibraryModal from "../components/LibraryModal";
-import { MediaItem } from "../components/AnimeCard";
+import { MediaItem, getTitle, getCover } from "../components/AnimeCard";
 
-interface Episode {
-  id: string;
-  number: number;
-  title?: string;
-  image?: string;
-  airDate?: string;
-  description?: string;
-}
-
-interface AnimeDetails extends MediaItem {
-  description?: string;
-  trailer?: { id?: string; site?: string };
-  relations?: { edges?: { relationType?: string; node?: MediaItem }[] };
-  characters?: { edges?: { node?: { id: number; name?: { full?: string }; image?: { large?: string } }; role?: string }[] };
-}
-
-interface EpisodesResponse {
-  episodes?: Episode[];
-  results?: Episode[];
-}
-
-interface DetailsResponse {
-  data?: { Media?: AnimeDetails };
-  results?: AnimeDetails;
-}
+interface Episode { id: string; number: number; title?: string; image?: string; airDate?: string; description?: string; }
+interface WikiDetail extends MediaItem { description?: string; }
 
 const WATCH_HISTORY_KEY = "watch-history";
-
-function getHistory(): Record<string, { episodeNumber: number; animeId: string }> {
-  try {
-    return JSON.parse(localStorage.getItem(WATCH_HISTORY_KEY) || "{}");
-  } catch {
-    return {};
-  }
+function getHistory(): Record<string, number> {
+  try { return JSON.parse(localStorage.getItem(WATCH_HISTORY_KEY) || "{}"); } catch { return {}; }
 }
-
-function saveHistory(animeId: string, episodeNumber: number) {
-  const history = getHistory();
-  history[animeId] = { episodeNumber, animeId };
-  localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history));
+function saveHistory(id: string, ep: number) {
+  const h = getHistory(); h[id] = ep; localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(h));
 }
 
 export default function WatchPage() {
   const { id } = useParams<{ id: string }>();
   const [selectedEp, setSelectedEp] = useState<Episode | null>(null);
   const [showLibrary, setShowLibrary] = useState(false);
-  const [showEpisodeList, setShowEpisodeList] = useState(true);
+  const [showEpList, setShowEpList] = useState(true);
 
-  const { data: details, isLoading: detailsLoading } = useQuery<AnimeDetails>({
+  const { data: detail, isLoading } = useQuery<WikiDetail>({
     queryKey: ["anime-details", id],
     queryFn: async () => {
-      const res = await apiFetch<DetailsResponse>(`/api/anime/details/${id}`);
-      return res?.data?.Media || (res as unknown as AnimeDetails);
+      const res = await apiFetch<{ data?: { Media?: WikiDetail } }>(`/api/anime/details/${id}`);
+      return res?.data?.Media || (res as unknown as WikiDetail);
     },
     enabled: !!id,
   });
 
-  const { data: episodesData, isLoading: epsLoading } = useQuery<Episode[]>({
+  const { data: episodes = [], isLoading: epsLoading } = useQuery<Episode[]>({
     queryKey: ["anime-episodes", id],
     queryFn: async () => {
-      const res = await apiFetch<EpisodesResponse>(`/api/anime/episodes/${id}`);
+      const res = await apiFetch<{ episodes?: Episode[]; results?: Episode[] }>(`/api/anime/episodes/${id}`);
       return res?.episodes || res?.results || [];
     },
     enabled: !!id,
   });
 
-  const episodes = episodesData || [];
-
   useEffect(() => {
     if (episodes.length > 0 && !selectedEp) {
-      const history = getHistory();
-      const lastEp = history[id || ""];
-      const ep = lastEp
-        ? episodes.find((e) => e.number === lastEp.episodeNumber) || episodes[0]
-        : episodes[0];
-      setSelectedEp(ep);
+      const last = getHistory()[id || ""];
+      setSelectedEp(episodes.find((e) => e.number === last) || episodes[0]);
     }
   }, [episodes, id]);
 
-  function selectEpisode(ep: Episode) {
+  function pickEp(ep: Episode) {
     setSelectedEp(ep);
     if (id) saveHistory(id, ep.number);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const title =
-    typeof details?.title === "string"
-      ? details.title
-      : details?.title?.english || details?.title?.romaji || "Loading...";
+  if (isLoading) return <LoadingPage />;
 
-  if (detailsLoading) return <LoadingPage />;
+  const title = detail ? getTitle(detail) : "";
+  const cover = detail ? getCover(detail) : "";
+  const score = detail?.averageScore ? (detail.averageScore / 10).toFixed(1) : null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 animate-fade-in">
-      <Link
-        to={`/wiki/${id}`}
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-300 mb-5 transition-colors"
-      >
-        <ChevronLeft className="w-4 h-4" /> Back to Wiki
+      <Link to={`/wiki/${id}`} className="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-gray-300 mb-5 transition-colors">
+        <ChevronLeft className="w-3.5 h-3.5" /> Back to Wiki
       </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
+        {/* Player + Info */}
         <div className="space-y-4">
-          <div className="card overflow-hidden">
-            {selectedEp ? (
-              <div>
-                <div className="relative bg-black aspect-video flex items-center justify-center">
-                  {selectedEp.image ? (
-                    <img
-                      src={selectedEp.image}
-                      alt={`Episode ${selectedEp.number}`}
-                      className="w-full h-full object-cover opacity-30"
-                    />
-                  ) : null}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                    <div className="w-16 h-16 rounded-full bg-primary-600/80 flex items-center justify-center">
-                      <Play className="w-7 h-7 text-white fill-white ml-1" />
-                    </div>
-                    <p className="text-gray-300 text-sm">Episode {selectedEp.number}</p>
-                    {selectedEp.title && (
-                      <p className="text-gray-400 text-xs px-4 text-center">{selectedEp.title}</p>
-                    )}
+          {/* Player */}
+          <div className="rounded-lg overflow-hidden" style={{ backgroundColor: "#111", border: "1px solid #222" }}>
+            <div className="relative bg-black flex items-center justify-center" style={{ aspectRatio: "16/9" }}>
+              {selectedEp?.image && (
+                <img src={selectedEp.image} alt="" className="w-full h-full object-cover opacity-25 absolute inset-0" />
+              )}
+              <div className="relative flex flex-col items-center gap-3 z-10">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(245,166,35,0.2)", border: "1px solid rgba(245,166,35,0.4)" }}>
+                  <Play className="w-7 h-7 fill-white text-white ml-1" />
+                </div>
+                {selectedEp && (
+                  <div className="text-center">
+                    <p className="text-white text-sm font-medium">Episode {selectedEp.number}</p>
+                    {selectedEp.title && <p className="text-gray-500 text-xs mt-0.5">{selectedEp.title}</p>}
                   </div>
-                </div>
-                <div className="p-4">
-                  <h2 className="font-bold text-white">
-                    Episode {selectedEp.number}
-                    {selectedEp.title && ` — ${selectedEp.title}`}
-                  </h2>
-                  {selectedEp.airDate && (
-                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" /> {selectedEp.airDate}
-                    </p>
-                  )}
-                  {selectedEp.description && (
-                    <p className="text-sm text-gray-400 mt-2 line-clamp-3">{selectedEp.description}</p>
-                  )}
-                </div>
+                )}
               </div>
-            ) : (
-              <div className="aspect-video bg-white/5 flex items-center justify-center">
-                <p className="text-gray-500">Select an episode to watch</p>
-              </div>
-            )}
+            </div>
           </div>
 
-          <div className="card p-4">
-            <div className="flex items-start gap-4">
-              {typeof details?.coverImage !== "string" && details?.coverImage?.large && (
-                <img
-                  src={details.coverImage.large}
-                  alt={title}
-                  className="w-20 rounded-lg shrink-0"
-                />
-              )}
+          {/* Info */}
+          <div className="rounded-lg p-4" style={{ backgroundColor: "#111", border: "1px solid #222" }}>
+            <div className="flex gap-4">
+              {cover && <img src={cover} alt={title} className="w-16 rounded shrink-0" />}
               <div className="flex-1 min-w-0">
-                <h1 className="text-lg font-bold text-white mb-1">{title}</h1>
+                <h1 className="text-base font-bold text-white mb-1 uppercase">{title}</h1>
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {details?.averageScore && (
-                    <span className="badge bg-yellow-500/10 text-yellow-400">
-                      <Star className="w-3 h-3 fill-yellow-400" />
-                      {(details.averageScore / 10).toFixed(1)}
+                  {score && (
+                    <span className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded" style={{ backgroundColor: "#f5a623", color: "#000" }}>
+                      <Star className="w-2.5 h-2.5 fill-black" />{score}
                     </span>
                   )}
-                  {details?.format && (
-                    <span className="badge bg-white/10 text-gray-300">
-                      <Film className="w-3 h-3" />
-                      {details.format}
-                    </span>
-                  )}
-                  {details?.status && (
-                    <span className="badge bg-white/10 text-gray-300">
-                      {details.status}
-                    </span>
-                  )}
+                  {detail?.format && <span className="text-xs text-gray-500 px-2 py-0.5 rounded" style={{ backgroundColor: "#1a1a1a" }}>{detail.format}</span>}
+                  {detail?.status && <span className="text-xs text-gray-500 px-2 py-0.5 rounded" style={{ backgroundColor: "#1a1a1a" }}>{detail.status}</span>}
                 </div>
-                {details?.description && (
-                  <p
-                    className="text-sm text-gray-400 line-clamp-3"
-                    dangerouslySetInnerHTML={{
-                      __html: details.description.replace(/<[^>]+>/g, ""),
-                    }}
-                  />
+                {detail?.description && (
+                  <p className="text-xs text-gray-500 line-clamp-2" dangerouslySetInnerHTML={{ __html: detail.description.replace(/<[^>]+>/g, "") }} />
                 )}
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => setShowLibrary(true)}
-                    className="btn-primary text-sm h-8 px-4"
-                  >
-                    <BookOpen className="w-3.5 h-3.5" />
-                    Library
-                  </button>
-                </div>
+                <button onClick={() => setShowLibrary(true)} className="btn-primary text-xs h-7 px-3 mt-3">
+                  <BookOpen className="w-3 h-3" /> Library
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="card overflow-hidden">
-          <div
-            className="flex items-center justify-between p-4 border-b border-border cursor-pointer"
-            onClick={() => setShowEpisodeList((v) => !v)}
+        {/* Episode list */}
+        <div className="rounded-lg overflow-hidden" style={{ backgroundColor: "#111", border: "1px solid #222" }}>
+          <button
+            onClick={() => setShowEpList((v) => !v)}
+            className="w-full flex items-center justify-between p-4 border-b text-sm font-semibold text-white hover:bg-white/5 transition-colors"
+            style={{ borderColor: "#222" }}
           >
             <div className="flex items-center gap-2">
-              <List className="w-4 h-4 text-primary-400" />
-              <h3 className="font-semibold text-white text-sm">
-                Episodes {episodes.length > 0 && `(${episodes.length})`}
-              </h3>
+              <List className="w-4 h-4" style={{ color: "#f5a623" }} />
+              Episodes {episodes.length > 0 && `(${episodes.length})`}
             </div>
-            <ChevronRight
-              className={`w-4 h-4 text-gray-400 transition-transform ${showEpisodeList ? "rotate-90" : ""}`}
-            />
-          </div>
+            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showEpList ? "rotate-180" : ""}`} />
+          </button>
 
-          {showEpisodeList && (
-            <div className="max-h-[600px] overflow-y-auto">
+          {showEpList && (
+            <div className="overflow-y-auto" style={{ maxHeight: "520px" }}>
               {epsLoading ? (
-                <div className="p-4 text-center text-gray-500 text-sm">Loading episodes...</div>
+                <div className="p-4 text-center text-xs text-gray-600">Loading episodes…</div>
               ) : episodes.length === 0 ? (
-                <div className="p-4 text-center text-gray-500 text-sm">No episodes found</div>
+                <div className="p-4 text-center text-xs text-gray-600">No episodes found</div>
               ) : (
-                <div className="p-2 space-y-1">
-                  {episodes.map((ep) => (
-                    <button
-                      key={ep.id || ep.number}
-                      onClick={() => selectEpisode(ep)}
-                      className={`w-full text-left p-3 rounded-lg transition-colors group ${
-                        selectedEp?.number === ep.number
-                          ? "bg-primary-600 text-white"
-                          : "hover:bg-white/5 text-gray-300"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-bold w-8 ${selectedEp?.number === ep.number ? "text-white" : "text-gray-500"}`}>
+                <div className="p-2 space-y-0.5">
+                  {episodes.map((ep) => {
+                    const active = selectedEp?.number === ep.number;
+                    return (
+                      <button
+                        key={ep.id || ep.number}
+                        onClick={() => pickEp(ep)}
+                        className="w-full text-left px-3 py-2.5 rounded transition-colors flex items-center gap-2"
+                        style={{
+                          backgroundColor: active ? "rgba(245,166,35,0.15)" : "transparent",
+                          border: active ? "1px solid rgba(245,166,35,0.3)" : "1px solid transparent",
+                        }}
+                      >
+                        <span className="text-xs font-bold w-7 shrink-0" style={{ color: active ? "#f5a623" : "#555" }}>
                           {ep.number}
                         </span>
-                        <span className="text-sm truncate flex-1">
+                        <span className="text-xs text-gray-300 truncate flex-1">
                           {ep.title || `Episode ${ep.number}`}
                         </span>
-                        {selectedEp?.number === ep.number && (
-                          <Play className="w-3 h-3 fill-white shrink-0" />
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                        {active && <Play className="w-3 h-3 shrink-0" style={{ color: "#f5a623", fill: "#f5a623" }} />}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -262,12 +167,8 @@ export default function WatchPage() {
         </div>
       </div>
 
-      {showLibrary && details && (
-        <LibraryModal
-          item={details}
-          mediaType="ANIME"
-          onClose={() => setShowLibrary(false)}
-        />
+      {showLibrary && detail && (
+        <LibraryModal item={detail} mediaType="ANIME" onClose={() => setShowLibrary(false)} />
       )}
     </div>
   );

@@ -4,76 +4,104 @@
 
 @layer base {
   * {
-    @apply border-border;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
   }
 
   html {
-    @apply scroll-smooth;
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-surface text-gray-100 font-sans antialiased;
-    background-color: #0f0f13;
-    color: #f1f1f5;
+    background-color: #000000;
+    color: #ffffff;
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
 
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
-
   ::-webkit-scrollbar-track {
-    background: #0a0a0d;
+    background: #000;
   }
-
   ::-webkit-scrollbar-thumb {
-    background: #3a3a4a;
+    background: #333;
     border-radius: 3px;
   }
-
   ::-webkit-scrollbar-thumb:hover {
-    background: #d946ef;
+    background: #f5a623;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-card rounded-xl border border-border overflow-hidden;
-    background-color: #1a1a24;
-    border-color: #2a2a3a;
+    background-color: #111111;
+    border: 1px solid #222222;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .btn-watch {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded text-sm font-semibold
+      bg-white/10 hover:bg-white/20 text-white border border-white/20
+      backdrop-blur-sm transition-all duration-200;
+  }
+
+  .btn-wiki {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded text-sm font-semibold
+      bg-white/5 hover:bg-white/15 text-white border border-white/15
+      backdrop-blur-sm transition-all duration-200;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg
-      bg-primary-600 hover:bg-primary-500 text-white font-medium
-      transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded text-sm font-semibold
+      bg-accent hover:bg-accent-light text-black transition-all duration-200
+      disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
-  .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg
-      bg-white/5 hover:bg-white/10 text-gray-200 font-medium
-      border border-white/10 hover:border-white/20
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded text-sm font-medium
+      bg-transparent hover:bg-white/5 text-gray-300 hover:text-white
       transition-all duration-200;
   }
 
   .input {
-    @apply w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5
-      text-gray-100 placeholder-gray-500 outline-none
-      focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50
+    @apply w-full bg-white/5 border border-white/10 rounded px-4 py-2
+      text-white placeholder-gray-500 outline-none text-sm
+      focus:ring-1 focus:ring-accent/60 focus:border-accent/40
       transition-all duration-200;
   }
 
-  .badge {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+  .nav-link {
+    @apply text-sm font-medium text-gray-300 hover:text-white transition-colors px-2 py-1;
+  }
+
+  .nav-link-active {
+    @apply text-sm font-medium text-white transition-colors px-2 py-1;
+  }
+
+  .type-tab {
+    @apply px-4 py-1.5 rounded text-sm font-medium transition-all cursor-pointer;
+  }
+
+  .type-tab-active {
+    @apply bg-white text-black;
+  }
+
+  .type-tab-inactive {
+    @apply bg-transparent text-gray-400 hover:text-white;
+  }
+
+  .score-badge {
+    @apply absolute top-1.5 left-1.5 flex items-center gap-0.5
+      bg-black/80 text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded;
   }
 
   .shimmer {
-    background: linear-gradient(
-      90deg,
-      #1a1a24 0%,
-      #222231 50%,
-      #1a1a24 100%
-    );
+    background: linear-gradient(90deg, #111 0%, #1a1a1a 50%, #111 100%);
     background-size: 1000px 100%;
     animation: shimmer 1.5s infinite;
   }

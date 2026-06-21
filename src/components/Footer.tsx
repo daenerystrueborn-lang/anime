@@ -1,91 +1,71 @@
 import { Link } from "react-router-dom";
-import { Tv } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-border bg-surface/50 mt-auto">
+    <footer className="border-t border-white/5 mt-auto" style={{ backgroundColor: "#050505" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-          <div className="col-span-1 sm:col-span-2 md:col-span-1">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+          <div className="col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                <Tv className="w-3.5 h-3.5 text-white" />
+              <div className="w-7 h-7 rounded flex items-center justify-center text-black font-black text-sm" style={{ backgroundColor: "#f5a623" }}>
+                A
               </div>
-              <span className="font-bold text-white">
-                Anime<span className="text-primary-400">astral</span>
-              </span>
+              <span className="font-bold text-white">Animeastral</span>
             </Link>
-            <p className="text-xs text-gray-500 leading-relaxed">
+            <p className="text-xs text-gray-600 leading-relaxed">
               Your universe for anime, manga, manhwa and novels.
             </p>
           </div>
 
-          <div>
-            <h4 className="text-sm font-semibold text-gray-300 mb-3">Browse</h4>
-            <ul className="space-y-2">
-              {[
-                { to: "/anime", label: "Anime" },
-                { to: "/wiki", label: "Wiki" },
+          {[
+            {
+              title: "Browse",
+              links: [
+                { to: "/", label: "Home" },
                 { to: "/rankings", label: "Rankings" },
-              ].map((link) => (
-                <li key={link.to}>
-                  <Link
-                    to={link.to}
-                    className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold text-gray-300 mb-3">Tools</h4>
-            <ul className="space-y-2">
-              {[
+                { to: "/wiki", label: "Wiki" },
+              ],
+            },
+            {
+              title: "Tools",
+              links: [
                 { to: "/downloads", label: "Downloads" },
+                { to: "/anime", label: "Browse Anime" },
                 { to: "/profile", label: "Library" },
-              ].map((link) => (
-                <li key={link.to}>
-                  <Link
-                    to={link.to}
-                    className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-semibold text-gray-300 mb-3">Account</h4>
-            <ul className="space-y-2">
-              {[
+              ],
+            },
+            {
+              title: "Account",
+              links: [
                 { to: "/login", label: "Sign In" },
                 { to: "/register", label: "Register" },
                 { to: "/profile", label: "Profile" },
-              ].map((link) => (
-                <li key={link.to}>
-                  <Link
-                    to={link.to}
-                    className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+              ],
+            },
+          ].map((section) => (
+            <div key={section.title}>
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                {section.title}
+              </h4>
+              <ul className="space-y-2">
+                {section.links.map((link) => (
+                  <li key={link.to}>
+                    <Link to={link.to} className="text-sm text-gray-600 hover:text-gray-300 transition-colors">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        <div className="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-gray-600">
+        <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <p className="text-xs text-gray-700">
             &copy; {new Date().getFullYear()} Animeastral. All rights reserved.
           </p>
-          <p className="text-xs text-gray-600">
-            Data provided by AniList, MangaPill & NovelFire
+          <p className="text-xs text-gray-700">
+            Data via AniList · MangaPill · NovelFire
           </p>
         </div>
       </div>
